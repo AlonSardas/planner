@@ -94,8 +94,8 @@ public class Widgets.Calendar.Calendar : Gtk.Box {
 
         var date = new GLib.DateTime.local (year_nav, month_nav, 1, 0, 0, 0);
 
-        var firts_week = new DateTime.local (date.get_year (), date.get_month (), 1, 0, 0, 0);
-        int start_day = firts_week.get_day_of_week () - 1;
+        var first_week = new DateTime.local (date.get_year (), date.get_month (), 1, 0, 0, 0);
+        int start_day = get_day_in_week(first_week);
 
         int max_days = Planner.utils.get_days_of_month (date.get_month (), year_nav);
 
@@ -119,8 +119,8 @@ public class Widgets.Calendar.Calendar : Gtk.Box {
 
         var date = new GLib.DateTime.local (year_nav, month_nav, 1, 0, 0, 0);
 
-        var firts_week = new DateTime.local (date.get_year (), date.get_month (), 1, 0, 0, 0);
-        int start_day = firts_week.get_day_of_week () - 1;
+        var first_week = new DateTime.local (date.get_year (), date.get_month (), 1, 0, 0, 0);
+        int start_day = get_day_in_week(first_week);
 
         int max_days = Planner.utils.get_days_of_month (date.get_month (), year_nav);
 
@@ -143,9 +143,8 @@ public class Widgets.Calendar.Calendar : Gtk.Box {
         year_nav = year;
         day_nav = day;
 
-        var firts_week = new DateTime.local (year, month, 1, 0, 0, 0);
-        int start_day = firts_week.get_day_of_week () - 1;
-        // int start_day = firts_week.get_day_of_week ();
+        var first_week = new DateTime.local (year, month, 1, 0, 0, 0);
+        int start_day = get_day_in_week(first_week);
 
         int max_days = Planner.utils.get_days_of_month (current_date.get_month (), year_nav);
 
@@ -160,5 +159,10 @@ public class Widgets.Calendar.Calendar : Gtk.Box {
 
         calendar_header.date = current_date;
         selection_changed (new GLib.DateTime.now_local ());
+    }
+
+    private int get_day_in_week(DateTime day) {
+        // return firts_week.get_day_of_week () - 1;
+        return day.get_day_of_week () % 7;
     }
 }
