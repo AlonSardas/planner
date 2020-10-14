@@ -477,7 +477,8 @@ paned.horizontal > separator {
 }
 
 .content-entry {
-    color: @text_color;
+    // color: @text_color;
+    color: #000000;
     border-width: 0px 0px 0px 0px;
     background-color: @base_color;
 }
@@ -557,7 +558,8 @@ paned.horizontal > separator {
 */
 
 .calendar-today {
-    color: @colorAccent;
+    // color: @colorAccent;
+    color: #2a2a8a;
     border-radius: 6px;
     padding: 3px;
     font-weight: bold;
@@ -566,6 +568,7 @@ paned.horizontal > separator {
 .calendar-day-selected {
     background-color: @colorAccent;
     color: #fafafa;
+    // color: #2a2a8a
     border-radius: 6px;
     padding: 3px;
 }
