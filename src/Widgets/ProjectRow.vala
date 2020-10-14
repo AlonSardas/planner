@@ -573,7 +573,7 @@ public class Widgets.ProjectRow : Gtk.ListBoxRow {
         share_list_menu.add (share_mail);
         share_list_menu.show_all ();
 
-        // var duplicate_menu = new Widgets.ImageMenuItem (_("Duplicate"), "edit-copy-symbolic");
+        var duplicate_menu = new Widgets.ImageMenuItem (_("Duplicate"), "edit-copy-symbolic");
 
         var delete_menu = new Widgets.ImageMenuItem (_("Delete"), "user-trash-symbolic");
         delete_menu.get_style_context ().add_class ("menu-danger");
@@ -584,7 +584,7 @@ public class Widgets.ProjectRow : Gtk.ListBoxRow {
         menu.add (new Gtk.SeparatorMenuItem ());
         menu.add (move_area_menu);
         menu.add (share_menu);
-        // menu.add (duplicate_menu);
+        menu.add (duplicate_menu);
         menu.add (new Gtk.SeparatorMenuItem ());
         menu.add (delete_menu);
 
@@ -600,6 +600,11 @@ public class Widgets.ProjectRow : Gtk.ListBoxRow {
             var dialog = new Dialogs.ProjectSettings (project);
             dialog.destroy.connect (Gtk.main_quit);
             dialog.show_all ();
+        });
+
+
+        duplicate_menu.activate.connect(() => {
+            project.duplicate();
         });
 
         delete_menu.activate.connect (() => {

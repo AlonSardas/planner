@@ -91,16 +91,30 @@ public class Objects.Item : GLib.Object {
         });
     }
 
-    public void get_duplicate () {
+    public Objects.Item get_duplicate (int64 new_project_id=-1, int64 new_parent_id=-1) {
         var item = new Objects.Item ();
 
-        item.project_id = project_id;
+        item.id = Planner.utils.generate_id ();
+        foreach (var check in Planner.database.get_all_cheks_by_item (this.id)) {
+            check.get_duplicate(new_project_id, item.id);
+        }
+
+        if (new_project_id == -1) {
+            item.project_id = project_id;
+        } else {
+            item.project_id = new_project_id;
+        }
         item.section_id = section_id;
         item.user_id = user_id;
         item.assigned_by_uid = assigned_by_uid;
         item.responsible_uid = responsible_uid;
         item.sync_id = sync_id;
-        item.parent_id = parent_id;
+
+        if (new_parent_id == -1){
+            item.parent_id = this.parent_id;
+        } else {
+            item.parent_id = new_parent_id;
+        }
         item.priority = priority;
         item.is_todoist = is_todoist;
         item.content = content;
@@ -111,21 +125,20 @@ public class Objects.Item : GLib.Object {
         item.due_lang = due_lang;
         item.due_is_recurring = due_is_recurring;
 
-        if (is_todoist == 1) {
-            var temp_id_mapping = Planner.utils.generate_id ();
-            Planner.todoist.add_item (item, -1, temp_id_mapping);
-            Planner.notifications.send_undo_notification (
-                _("Duplicating task…"),
-                Planner.utils.build_undo_object ("item_duplicate", "item", temp_id_mapping.to_string (), "", "")
-            );
-        } else {
-            item.id = Planner.utils.generate_id ();
-            if (Planner.database.insert_item (item, -1)) {
+        if (Planner.database.insert_item (item, -1)) {
+            if (new_parent_id == -1) {
                 Planner.notifications.send_notification (
                     _("Task duplicate")
                 );
             }
+        } else {
+            Planner.notifications.send_notification (
+                _("!!!Error duplicating task!!!")
+            );
         }
+
+
+        return item;
     }
 
     public void convert_to_project () {

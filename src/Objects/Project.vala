@@ -59,6 +59,43 @@ public class Objects.Project : GLib.Object {
         });
     }
 
+    public void duplicate() {
+        var project = new Objects.Project ();
+        project.id = Planner.utils.generate_id ();
+
+        foreach (var item in Planner.database.get_all_items_by_project(id) ) {
+            if (item.parent_id == 0) {
+                item.get_duplicate(project.id);
+            }
+        }
+
+        project.area_id = area_id;
+        project.name = name;
+        project.note = note;
+        project.due_date = due_date;
+
+        project.color = color;
+        project.is_todoist = is_todoist;
+        project.inbox_project = inbox_project;
+        project.team_inbox = team_inbox;
+        project.item_order = item_order;
+        project.inbox_project = inbox_project;
+
+        project.is_sync = is_sync;
+        project.shared = shared;
+        project.is_kanban = is_kanban;
+        project.show_completed = show_completed;
+        project.sort_order = sort_order;
+
+        if (Planner.database.insert_project (project)) {
+            Planner.notifications.send_notification (
+                _("Project Duplicate")
+            );
+        } else {
+            warning ("Error creating new project in database");
+        }
+    }
+
     public string to_json () {
         var builder = new Json.Builder ();
         builder.begin_object ();
