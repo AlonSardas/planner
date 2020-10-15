@@ -8,6 +8,7 @@
 @define-color row_selected_color shade (@check_border_color, 0.75);
 @define-color upcoming_color #692fc2;
 @define-color background_new_color #692fc2;
+
 /*
     Dark theme
 */
@@ -477,7 +478,7 @@ paned.horizontal > separator {
 }
 
 .content-entry {
-    // color: @text_color;
+    /*color: @text_color;*/
     color: #000000;
     border-width: 0px 0px 0px 0px;
     background-color: @base_color;
@@ -558,7 +559,7 @@ paned.horizontal > separator {
 */
 
 .calendar-today {
-    // color: @colorAccent;
+    /* color: @colorAccent; */
     color: #2a2a8a;
     border-radius: 6px;
     padding: 3px;
@@ -567,8 +568,8 @@ paned.horizontal > separator {
 
 .calendar-day-selected {
     background-color: @colorAccent;
-    color: #fafafa;
-    // color: #2a2a8a
+    /*color: #fafafa;*/
+    color: #2a2a8a;
     border-radius: 6px;
     padding: 3px;
 }
