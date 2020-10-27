@@ -46,7 +46,14 @@ public class Dialogs.ProjectSettings : Gtk.Dialog {
         height_request = 550;
         width_request = 480;
         get_style_context ().add_class ("planner-dialog");
-        
+        get_style_context ().add_class ("app");
+
+        //  use_header_bar = 1;
+        //  var header_bar = (Gtk.HeaderBar) get_header_bar ();
+        //  header_bar.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
+        //  header_bar.get_style_context ().add_class ("oauth-dialog");
+        //  header_bar.get_style_context ().add_class ("default-decoration");
+
         name_entry = new Widgets.Entry ();
         name_entry.margin_start = 12;
         name_entry.margin_end = 12;

@@ -42,6 +42,8 @@ public class Planner : Gtk.Application {
     private static int64 load_project = 0;
     private static bool version = false;
     private static bool clear_database = false;
+    private static string lang = "";
+    
 
     public const OptionEntry[] PLANNER_OPTIONS = {
         { "version", 'v', 0, OptionArg.NONE, ref version,
@@ -52,6 +54,8 @@ public class Planner : Gtk.Application {
         "Run the Application in background", null },
         { "load-project", 'l', 0, OptionArg.INT64, ref load_project,
         "Open project in separate window", "PROJECT_ID" },
+        { "lang", 'n', 0, OptionArg.STRING, ref lang,
+        "Open Planner in a specific language", "LANG" },
         { null }
     };
 
@@ -94,6 +98,11 @@ public class Planner : Gtk.Application {
     }
 
     protected override void activate () {
+        // Set lang
+        if (lang != "") {
+            GLib.Environment.set_variable ("LANGUAGE", lang, true);
+        }
+        
         if (get_windows ().length () > 0) {
             get_windows ().data.present ();
             get_windows ().data.show_all ();
@@ -195,6 +204,7 @@ public class Planner : Gtk.Application {
         default_theme.add_resource_path ("/com/github/alainm23/planner");
 
         utils.apply_theme_changed ();
+        utils.update_font_scale ();
 
         // Set Theme and Icon
         Gtk.Settings.get_default ().set_property ("gtk-icon-theme-name", "elementary");
@@ -232,15 +242,8 @@ public class Planner : Gtk.Application {
         if (settings.get_string ("version") != Constants.VERSION) {
             var dialog = new Widgets.WhatsNew ("com.github.alainm23.planner", _("Planner %s is here, with many design improvements, new features, and more.".printf (Constants.VERSION)));
 
-            // dialog.append ("planner-quick-add", _("Quick Add Improvements"), _("Quick Add comes with a new design and new features."));
-            // dialog.append ("preferences-system-windows", _("Multiple Windows Support"), _("Open your projects in separate windows and drag your tasks from one side to the other."));
-            // dialog.append ("applications-utilities", _("Multiple Selection Support"), _("Manage multiple tasks at the same time by holding down the <b>Ctrl</b> key and selecting the tasks."));
-
             List<string> list = new List<string> ();
-            list.append (_("New Quick Find button position."));
-            list.append (_("Github #565 - Fixing error when displaying the project name."));
-            list.append (_("Github #563 - Fixing error when moving a task to the end of the list."));
-            list.append (_("Github #559 #415 - Enabled click to see full details of a completed task."));
+            list.append (_("Github #577 - Fixed recurring tasks."));
             list.append (_("Updated translations."));
             
             dialog.append_notes (_("Bug fixes and performance improvement"), list, 30);

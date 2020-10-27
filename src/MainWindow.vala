@@ -25,6 +25,9 @@ public class MainWindow : Gtk.Window {
     public Gee.HashMap <string, bool> projects_loaded;
     public Gee.HashMap <string, bool> tasklists_loaded;
 
+    // Delegates
+    delegate void HookFunc ();
+
     private Widgets.Pane pane;
     private Gtk.HeaderBar sidebar_header;
     private Gtk.HeaderBar projectview_header;
@@ -33,12 +36,14 @@ public class MainWindow : Gtk.Window {
     private Views.Today today_view = null;
     private Views.Upcoming upcoming_view = null;
     private Views.Completed completed_view = null;
+    private Views.AllTasks alltasks_view = null;
     private Views.Label label_view = null;
     private Views.Priority priority_view = null;
     
     private Widgets.MultiSelectToolbar multiselect_toolbar;
     private Services.DBusServer dbus_server;
     public Services.ActionManager action_manager;
+    public Services.PluginsManager plugins;
 
     private uint timeout_id = 0;
     private uint configure_id = 0;
@@ -56,6 +61,7 @@ public class MainWindow : Gtk.Window {
 
     construct {
         action_manager = new Services.ActionManager (app, this);
+        plugins = new Services.PluginsManager (this);
 
         dbus_server = Services.DBusServer.get_default ();
         dbus_server.item_added.connect ((id) => {
@@ -153,8 +159,26 @@ public class MainWindow : Gtk.Window {
         // This must come after setting header_paned as the titlebar
         header_paned.get_style_context ().remove_class ("titlebar");
         get_style_context ().add_class ("rounded");
+        get_style_context ().add_class ("app");
         Planner.settings.bind ("pane-position", header_paned, "position", GLib.SettingsBindFlags.DEFAULT);
         Planner.settings.bind ("pane-position", paned, "position", GLib.SettingsBindFlags.DEFAULT);
+
+        realize.connect (() => {
+            // Plugins hook
+            HookFunc hook_func = () => {
+                // plugins.hook_window (this);
+                // plugins.hook_toolbar (toolbar);
+                // plugins.hook_share_menu (toolbar.share_menu);
+                // plugins.hook_notebook_bottom (bottombar);
+                // plugins.hook_split_view (split_view);
+            };
+
+            plugins.extension_added.connect (() => {
+                hook_func ();
+            });
+
+            hook_func ();
+        });
 
         Planner.notifications.send_notification.connect ((message, style) => {
             var notification = new Widgets.Toast (message, "", style);
@@ -362,6 +386,8 @@ public class MainWindow : Gtk.Window {
                 );
             } else if (key == "button-layout") {
                 check_button_layout ();
+            } else if (key == "font-scale") {
+                Planner.utils.update_font_scale ();
             }
         });
 
@@ -505,6 +531,13 @@ public class MainWindow : Gtk.Window {
 
             completed_view.add_all_items ();
             stack.visible_child_name = "completed-view";
+        } else if (id == 5) {
+            if (alltasks_view == null) {
+                alltasks_view = new Views.AllTasks ();
+                stack.add_named (alltasks_view, "alltasks-view");
+            }
+            
+            stack.visible_child_name = "alltasks-view";
         }
 
         pane.select_item (id);
@@ -687,7 +720,7 @@ public class MainWindow : Gtk.Window {
                 "upcoming",
                 new DateTime.now_local ().add_days (1).to_string ()
             );
-        } else {
+        } else if (stack.visible_child_name.has_prefix ("project")) {
             var project = ((Views.Project) stack.visible_child).project;
             Planner.event_bus.magic_button_activated (
                 project.id,
@@ -697,6 +730,8 @@ public class MainWindow : Gtk.Window {
                 "project",
                 ""
             );
+        } else if (stack.visible_child_name == "priority-view") {
+            priority_view.add_new_item (index);
         }
     }
 
@@ -711,7 +746,7 @@ public class MainWindow : Gtk.Window {
             label_view.hide_items ();
         } else if (stack.visible_child_name == "priority-view") {
             priority_view.hide_items ();
-        } else {
+        } else if (stack.visible_child_name.has_prefix ("project")) {
             var project = ((Views.Project) stack.visible_child).project;
             Planner.event_bus.hide_items_project (project.id);
         }
@@ -738,7 +773,7 @@ public class MainWindow : Gtk.Window {
             
         } else if (stack.visible_child_name == "priority-view") {
             
-        } else {
+        } else if (stack.visible_child_name.has_prefix ("project")) {
             var project = ((Views.Project) stack.visible_child).project;
             Planner.database.update_sort_order_project (project.id, sort);
         }
@@ -806,7 +841,7 @@ public class MainWindow : Gtk.Window {
                 item.id = Planner.utils.generate_id ();
                 Planner.database.insert_item (item, -1);
             }
-        } else {
+        } else if (stack.visible_child_name.has_prefix ("project")) {
             var project = ((Views.Project) stack.visible_child).project;
             item.project_id = project.id;
             item.is_todoist = project.is_todoist;
@@ -832,7 +867,7 @@ public class MainWindow : Gtk.Window {
 
         } else if (stack.visible_child_name == "upcoming-view") {
 
-        } else {
+        } else if (stack.visible_child_name.has_prefix ("project")) {
             var project_view = (Views.Project) stack.visible_child;
             project_view.open_new_section ();
         }
