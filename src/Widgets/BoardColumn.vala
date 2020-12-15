@@ -122,12 +122,12 @@ public class Widgets.BoardColumn : Gtk.EventBox {
         settings_button.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
         settings_button.get_style_context ().add_class ("hidden-button");
 
-        var count_label = new Gtk.Label ("2");
+        var count_label = new Gtk.Label (null);
 
         var menu_stack = new Gtk.Stack ();
         menu_stack.transition_type = Gtk.StackTransitionType.CROSSFADE;
-        menu_stack.add_named (count_label, "count");
         menu_stack.add_named (settings_button, "button");
+        menu_stack.add_named (count_label, "count");
 
         var top_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         // top_box.pack_start (add_revealer, false, false, 0);
@@ -428,7 +428,7 @@ public class Widgets.BoardColumn : Gtk.EventBox {
         });
 
         top_eventbox.enter_notify_event.connect ((event) => {
-            menu_stack.visible_child_name = "button";
+            // menu_stack.visible_child_name = "button";
             add_revealer.reveal_child = true;
             add_button.get_style_context ().add_class ("animation");
 
@@ -440,7 +440,7 @@ public class Widgets.BoardColumn : Gtk.EventBox {
                 return false;
             }
 
-            menu_stack.visible_child_name = "count";
+            // menu_stack.visible_child_name = "count";
             add_revealer.reveal_child = false;
             add_button.get_style_context ().remove_class ("animation");
 
@@ -583,7 +583,7 @@ public class Widgets.BoardColumn : Gtk.EventBox {
             });
         });
 
-        Planner.database.item_moved.connect ((item, project_id, old_project_id) => {
+        Planner.database.item_moved.connect ((item, project_id, old_project_id, index) => {
             Idle.add (() => {
                 if (section.project_id == old_project_id) {
                     items_list.foreach ((widget) => {
@@ -594,6 +594,26 @@ public class Widgets.BoardColumn : Gtk.EventBox {
                             items_list.remove (row);
                         }
                     });
+                }
+
+                if (project.id == project_id && item.section_id == section.id) {
+                    item.project_id = project_id;
+
+                    var row = new Widgets.ItemRow (item);
+                    row.destroy.connect (() => {
+                        item_row_removed (row);
+                    });
+
+                    items_uncompleted_added.set (item.id.to_string (), row);
+                    if (index == -1) {
+                        listbox.add (row);
+                        items_list.add (row);
+                    } else {
+                        listbox.insert (row, index);
+                        items_list.insert (index, row);
+                    }
+                    
+                    listbox.show_all ();
                 }
 
                 return false;
@@ -1205,7 +1225,6 @@ public class Widgets.BoardColumn : Gtk.EventBox {
         Widgets.ItemRow target;
         Widgets.ItemRow source;
         Gtk.Allocation alloc;
-        int newPos;
 
         target = (Widgets.ItemRow) listbox.get_row_at_y (y);
         target.get_allocation (out alloc);

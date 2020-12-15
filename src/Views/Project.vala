@@ -224,7 +224,7 @@ public class Views.Project : Gtk.EventBox {
         note_textview = new Widgets.TextView ();
         note_textview.tooltip_text = _("Add a description");
         note_textview.hexpand = true;
-        note_textview.valign = Gtk.Align.START;
+        // note_textview.valign = Gtk.Align.START;
         note_textview.wrap_mode = Gtk.WrapMode.CHAR;
         note_textview.get_style_context ().add_class ("project-textview");
         note_textview.buffer.text = project.note;
@@ -232,12 +232,12 @@ public class Views.Project : Gtk.EventBox {
         // Note Label
         note_label = new Gtk.Label ("");
         update_note_label (project.note);
-        note_label.valign = Gtk.Align.START;
+        // note_label.valign = Gtk.Align.START;
         note_label.wrap = true;
         note_label.wrap_mode = Pango.WrapMode.CHAR;
         note_label.xalign = 0;
         note_label.yalign = 0;
-        note_label.margin_end = 3;
+        note_label.hexpand = true;
         note_label.use_markup = true;
 
         var note_eventbox = new Gtk.EventBox ();
@@ -246,15 +246,13 @@ public class Views.Project : Gtk.EventBox {
 
         note_stack = new Gtk.Stack ();
         note_stack.hexpand = true;
-        note_stack.margin_top = 6;
-        // note_stack.margin_bottom = 6;
+        note_stack.margin_top = 18;
         note_stack.margin_start = 42;
         note_stack.margin_end = 43;
         note_stack.transition_type = Gtk.StackTransitionType.CROSSFADE;
         note_stack.vhomogeneous = false;
         note_stack.add_named (note_eventbox, "label");
         note_stack.add_named (note_textview, "textview");
-
         
         list_view = new Widgets.ListView (project);
         board_view = new Widgets.BoardView (project);
@@ -279,7 +277,7 @@ public class Views.Project : Gtk.EventBox {
         main_box.expand = true;
         main_box.pack_start (top_box, false, false, 0);
         main_box.pack_start (action_revealer, false, false, 0);
-        // main_box.pack_start (note_stack, false, false, 0);
+        main_box.pack_start (note_stack, false, false, 0);
         main_box.pack_start (main_stack, false, true, 0);
 
         var overlay = new Gtk.Overlay ();
@@ -302,8 +300,11 @@ public class Views.Project : Gtk.EventBox {
         });
 
         magic_button.clicked.connect (() => {
-            board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
-            list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            if (project.is_kanban == 1) {
+                board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            } else {
+                list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            }
         });
 
         submit_button.clicked.connect (() => {
@@ -583,11 +584,11 @@ public class Views.Project : Gtk.EventBox {
             margin_bottom = 3
         });
         popover_grid.add (share_item);
+        popover_grid.add (show_completed_button);
         popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
             margin_top = 3,
             margin_bottom = 3
         });
-        popover_grid.add (show_completed_button);
         popover_grid.add (delete_menu);
 
         popover.add (popover_grid);

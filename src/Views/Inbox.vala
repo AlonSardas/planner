@@ -154,8 +154,11 @@ public class Views.Inbox : Gtk.EventBox {
         show_all ();
 
         magic_button.clicked.connect (() => {
-            board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
-            list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            if (project.is_kanban == 1) {
+                board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            } else {
+                list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            }
         });
 
         // Check Placeholder view
@@ -293,10 +296,6 @@ public class Views.Inbox : Gtk.EventBox {
             margin_bottom = 3
         });
         popover_grid.add (share_item);
-        popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
-            margin_top = 3,
-            margin_bottom = 3
-        });
         popover_grid.add (show_completed_button);
 
         popover.add (popover_grid);

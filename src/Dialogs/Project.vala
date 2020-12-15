@@ -233,16 +233,13 @@ public class Dialogs.Project : Gtk.Dialog {
         action_revealer.transition_type = Gtk.RevealerTransitionType.SLIDE_DOWN;
         action_revealer.add (action_grid);
 
+        var label_filter = new Widgets.LabelFilter (project);
+
         top_box.pack_start (name_stack, false, true, 0);
         top_box.pack_end (settings_button, false, false, 0);
-        // top_box.pack_end (search_button, false, false, 0);
-        if (project.is_todoist == 1) {
-            // top_box.pack_end (add_person_button, false, false, 0);
-            // top_box.pack_end (comment_button, false, false, 0);
-        }
         top_box.pack_end (section_button, false, false, 0);
+        top_box.pack_end (label_filter, false, false, 0);
         top_box.pack_end (due_revealer, false, false, 0);
-        // top_box.pack_end (due_button, false, false, 0);
 
         note_textview = new Widgets.TextView ();
         note_textview.tooltip_text = _("Add a description");
@@ -332,8 +329,11 @@ public class Dialogs.Project : Gtk.Dialog {
         });
 
         magic_button.clicked.connect (() => {
-            board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
-            list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            if (project.is_kanban == 1) {
+                board_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            } else {
+                list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
+            }
         });
 
         // Check Placeholder view
@@ -597,11 +597,11 @@ public class Dialogs.Project : Gtk.Dialog {
             margin_bottom = 3
         });
         popover_grid.add (share_item);
+        popover_grid.add (show_completed_button);
         popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
             margin_top = 3,
             margin_bottom = 3
         });
-        popover_grid.add (show_completed_button);
         popover_grid.add (delete_menu);
 
         popover.add (popover_grid);

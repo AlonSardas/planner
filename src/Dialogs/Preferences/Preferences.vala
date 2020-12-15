@@ -63,6 +63,7 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
         stack.add_named (get_badge_count_widget (), "badge-count");
         stack.add_named (get_theme_widget (), "theme");
         stack.add_named (get_task_widget (), "task");
+        stack.add_named (get_backups_widget (), "backups");
         stack.add_named (get_quick_add_widget (), "quick-add");
         stack.add_named (get_plugins_widget (), "plugins");
         stack.add_named (get_todoist_widget (), "todoist");
@@ -264,6 +265,10 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
             stack.visible_child_name = "fund";
         });
 
+        backups_item.activated.connect (() => {
+            stack.visible_child_name = "backups";
+        });
+
         return main_scrolled;
     }
 
@@ -457,6 +462,41 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
         default_priority.activated.connect ((index) => {
             Planner.settings.set_enum ("default-priority", index);
         });
+
+        return main_box;
+    }
+
+    private Gtk.Widget get_backups_widget () {
+        var top_box = new Dialogs.Preferences.TopBox ("go-home", _("Backups"));
+
+        var description_label = new Gtk.Label (
+            _("Planner creates automatic daily backups of your active projects and tasks. You can easily restore your backups anytime using project import.") // vala-lint=line-length
+        );
+        description_label.justify = Gtk.Justification.FILL;
+        description_label.use_markup = true;
+        description_label.wrap = true;
+        description_label.xalign = 0;
+        description_label.margin_bottom = 6;
+        description_label.margin_top = 6;
+        description_label.margin_start = 12;
+        description_label.margin_end = 12;
+
+        var box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+        box.margin_top = 6;
+        box.valign = Gtk.Align.START;
+        box.hexpand = true;
+        box.add (description_label);
+
+        var box_scrolled = new Gtk.ScrolledWindow (null, null);
+        box_scrolled.hscrollbar_policy = Gtk.PolicyType.NEVER;
+        box_scrolled.expand = true;
+        box_scrolled.add (box);
+
+        var main_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
+        main_box.expand = true;
+
+        main_box.pack_start (top_box, false, false, 0);
+        main_box.pack_start (box_scrolled, false, true, 0);
 
         return main_box;
     }
@@ -752,9 +792,15 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
 
         var save_last_switch = new Dialogs.Preferences.ItemSwitch (
             _("Save Last Selected Project"),
-            Planner.settings.get_boolean ("quick-add-save-last-project")
+            Planner.settings.get_boolean ("quick-add-save-last-project"),
+            false
         );
         save_last_switch.margin_top = 6;
+        
+        var automatically_close_switch = new Dialogs.Preferences.ItemSwitch (
+            _("Automatically close loses focus"),
+            Planner.settings.get_boolean ("quick-add-close-loses-focus")
+        );
 
         var revealer_box = new Gtk.Grid ();
         revealer_box.orientation = Gtk.Orientation.VERTICAL;
@@ -762,6 +808,7 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
         revealer_box.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL));
         revealer_box.add (change_button);
         revealer_box.add (save_last_switch);
+        revealer_box.add (automatically_close_switch);
 
         var box_revealer = new Gtk.Revealer ();
         box_revealer.transition_type = Gtk.RevealerTransitionType.CROSSFADE;
@@ -798,6 +845,10 @@ public class Dialogs.Preferences.Preferences : Gtk.Dialog {
 
         save_last_switch.activated.connect ((value) => {
             Planner.settings.set_boolean ("quick-add-save-last-project", value);
+        });
+
+        automatically_close_switch.activated.connect ((value) => {
+            Planner.settings.set_boolean ("quick-add-close-loses-focus", value);
         });
 
         change_button.clicked.connect (() => {
