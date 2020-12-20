@@ -42,6 +42,7 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
     private Gtk.Popover projects_popover = null;
     private Gtk.Popover reschedule_popover = null;
     private Gtk.Popover priority_popover = null;
+    private GLib.Cancellable cancellable = null;
     private Widgets.ModelButton priority_4_menu;
     private Widgets.ModelButton undated_button;
     private Gtk.ListBox projects_listbox;
@@ -253,8 +254,8 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
         main_grid.orientation = Gtk.Orientation.VERTICAL;
         main_grid.row_spacing = 0;
         main_grid.expand = false;
-        main_grid.margin_top = 6;
-        main_grid.margin_bottom= 6;
+        // main_grid.margin_top = 6;
+        main_grid.margin_bottom = 6;
         main_grid.margin_start = 6;
         main_grid.get_style_context ().add_class ("item-row-selected");
         main_grid.get_style_context ().add_class ("popover");
@@ -337,13 +338,18 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
         });
 
         cancel_button.clicked.connect (() => {
+            if (cancellable != null) {
+                cancellable.cancel ();
+            }
+            
             hide_destroy ();
         });
 
         Planner.todoist.item_added_started.connect ((id) => {
             if (temp_id_mapping == id) {
                 submit_stack.visible_child_name = "spinner";
-                sensitive = false;
+                submit_button.sensitive = false;
+                main_grid.sensitive = false;
             }
         });
 
@@ -375,11 +381,13 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
             }
         });
 
-        Planner.todoist.item_added_error.connect ((id) => {
+        Planner.todoist.item_added_error.connect ((id, error_code, error_message) => {
             if (temp_id_mapping == id) {
                 submit_stack.visible_child_name = "label";
-                sensitive = true;
-                content_entry.text = "";
+                submit_button.sensitive = true;
+                main_grid.sensitive = true;
+
+                Planner.notifications.send_notification (error_message, NotificationStyle.ERROR);
             }
         });
 
@@ -463,8 +471,6 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
         });
 
         label_button.label_selected.connect ((label) => {
-            print ("Label: %s\n".printf (label.name));
-
             var g = new Widgets.LabelItem (12312312312, 123123123123, label);
             labels_edit_revealer.reveal_child = true;
             labels_edit_box.add (g);
@@ -830,7 +836,9 @@ public class Widgets.NewItem : Gtk.ListBoxRow {
                 temp_id_mapping = Planner.utils.generate_id ();
                 
                 if (is_todoist == 1) {
-                    Planner.todoist.add_item (item, index, temp_id_mapping);
+                    // Planner.todoist.add_item (item, index, temp_id_mapping);
+                    cancellable = new Cancellable ();
+                    Planner.todoist.add_item_async (item, cancellable, index, temp_id_mapping);
                 } else {
                     item.id = Planner.utils.generate_id ();
                     if (Planner.database.insert_item (item, index)) {
