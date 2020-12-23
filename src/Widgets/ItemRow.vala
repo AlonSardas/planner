@@ -82,8 +82,8 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
     private Widgets.ImageMenuItem tomorrow_menu;
     private Gtk.SeparatorMenuItem date_separator;
     private Gtk.Menu menu = null;
+    private bool menu_opened = false;
 
-    private uint timeout_id = 0;
     private bool save_off = false;
 
     public Gee.HashMap<string, bool> labels_hashmap;
@@ -268,7 +268,8 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         var project_preview_grid = new Gtk.Grid ();
         project_preview_grid.column_spacing = 3;
         project_preview_grid.margin_end = 6;
-        project_preview_grid.halign = Gtk.Align.CENTER;
+        project_preview_grid.margin_top = 2;
+        project_preview_grid.halign = Gtk.Align.START;
         project_preview_grid.add (project_preview_image);
         project_preview_grid.add (project_preview_label);
 
@@ -307,7 +308,8 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         duedate_preview_grid = new Gtk.Grid ();
         duedate_preview_grid.column_spacing = 3;
         duedate_preview_grid.margin_end = 6;
-        duedate_preview_grid.halign = Gtk.Align.CENTER;
+        duedate_preview_grid.margin_top = 1;
+        duedate_preview_grid.halign = Gtk.Align.START;
         duedate_preview_grid.add (date_preview_revealer);
         duedate_preview_grid.add (time_preview_revealer);
         duedate_preview_grid.add (duedate_repeat_revealer);
@@ -375,8 +377,8 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         note_preview_image.gicon = new ThemedIcon ("text-x-generic-symbolic");
         note_preview_image.pixel_size = 10;
         note_preview_image.margin_end = 6;
-        note_preview_image.margin_top = 2;
-        note_preview_image.valign = Gtk.Align.CENTER;
+        note_preview_image.margin_top = 3;
+        note_preview_image.valign = Gtk.Align.START;
 
         note_preview_revealer = new Gtk.Revealer ();
         note_preview_revealer.transition_type = Gtk.RevealerTransitionType.SLIDE_LEFT;
@@ -654,7 +656,7 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         });
 
         content_entry.key_release_event.connect ((key) => {
-            if (key.keyval == 65307) {
+            if (key.keyval == 65307 && menu_opened == false) {
                 hide_item ();
             }
 
@@ -688,7 +690,12 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
                 var row = new Widgets.CheckRow (i);
 
                 row.hide_item.connect (hide_item);
-
+                row.enter_activate.connect ((r) => {
+                    if (r.get_index () + 1 >= Planner.database.get_all_cheks_by_item (item.id).size) {
+                        new_checklist.reveal_child = true;
+                    }
+                });
+                
                 check_listbox.add (row);
                 check_listbox.show_all ();
 
@@ -800,7 +807,7 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         });
 
         note_textview.key_release_event.connect ((key) => {
-            if (key.keyval == 65307) {
+            if (key.keyval == 65307 && menu_opened == false) {
                 note_stack.visible_child_name = "label";
                 update_note_label (note_textview.buffer.text);
                 hide_item ();
@@ -1249,6 +1256,11 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
             var row = new Widgets.CheckRow (check);
 
             row.hide_item.connect (hide_item);
+            row.enter_activate.connect ((r) => {
+                if (r.get_index () + 1 >= Planner.database.get_all_cheks_by_item (item.id).size) {
+                    new_checklist.reveal_child = true;
+                }
+            });
 
             check_listbox.add (row);
             check_listbox.show_all ();
@@ -1493,6 +1505,7 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         projects_menu.show_all ();
         sections_menu.show_all ();
 
+        menu_opened = true;
         menu.popup_at_pointer (null);
     }
 
@@ -1502,8 +1515,9 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
 
         menu.hide.connect (() => {
             handle_grid.get_style_context ().remove_class ("highlight");
+            menu_opened = false;
         });
-
+        
         var complete_menu = new Widgets.ImageMenuItem (_("Complete"), "emblem-default-symbolic");
         edit_menu = new Widgets.ImageMenuItem (_("Edit"), "edit-symbolic");
 

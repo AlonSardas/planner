@@ -353,16 +353,8 @@ public class Views.Today : Gtk.EventBox {
                     add_item (item, index);
                     check_placeholder_view ();
                 } else if (Planner.utils.is_overdue (datetime)) {
-                    var row = new Widgets.ItemRow (item, "today");
-
-                    overdues_loaded.set (item.id.to_string (), row);
-                    overdue_list.add (row);
-
-                    overdue_listbox.add (row);
-                    overdue_listbox.show_all ();
-
+                    add_overdue_item (item);
                     check_placeholder_view ();
-                    update_item_order ();
                 }
             }
         });
@@ -378,7 +370,11 @@ public class Views.Today : Gtk.EventBox {
                 if (items_loaded.has_key (item.id.to_string ())) {
                     items_loaded.get (item.id.to_string ()).hide_destroy ();
                     items_loaded.unset (item.id.to_string ());
-                    check_placeholder_view ();
+                }
+
+                if (overdues_loaded.has_key (item.id.to_string ())) {
+                    overdues_loaded.get (item.id.to_string ()).hide_destroy ();
+                    overdues_loaded.unset (item.id.to_string ());
                 }
 
                 if (items_completed_added.has_key (item.id.to_string ()) == false) {
@@ -389,6 +385,7 @@ public class Views.Today : Gtk.EventBox {
                     completed_listbox.show_all ();
                 }
 
+                check_placeholder_view ();
                 return false;
             });
         });
@@ -397,9 +394,21 @@ public class Views.Today : Gtk.EventBox {
             Idle.add (() => {
                 if (items_loaded.has_key (item.id.to_string ()) == false) {
                     var datetime = new GLib.DateTime.from_iso8601 (item.due_date, new GLib.TimeZone.local ());
-                    if (Planner.utils.is_today (datetime) || Planner.utils.is_overdue (datetime)) {
-                        if (items_loaded.has_key (item.id.to_string ()) == false) {
-                            add_item (item);
+                    if (Planner.utils.is_today (datetime)) {
+                        add_item (item);
+                        check_placeholder_view ();
+                    }
+                }
+
+                if (items_completed_added.has_key (item.id.to_string ())) {
+                    items_completed_added.unset (item.id.to_string ());
+                }
+
+                if (overdues_loaded.has_key (item.id.to_string ()) == false) {
+                    var datetime = new GLib.DateTime.from_iso8601 (item.due_date, new GLib.TimeZone.local ());
+                    if (Planner.utils.is_overdue (datetime)) {
+                        if (overdues_loaded.has_key (item.id.to_string ()) == false) {                            
+                            add_overdue_item (item);
                             check_placeholder_view ();
                         }
                     }
@@ -425,6 +434,10 @@ public class Views.Today : Gtk.EventBox {
                 set_sort_func (Planner.settings.get_int ("today-sort-order"));
             } else if (key == "show-today-completed") {
                 completed_revealer.reveal_child = Planner.settings.get_boolean ("show-today-completed");
+                if (completed_revealer.reveal_child) {
+                    add_completed_items ();
+                    check_placeholder_view ();
+                }
             }
         });
 
@@ -454,9 +467,9 @@ public class Views.Today : Gtk.EventBox {
     }
 
     private void update_today_label () {
-        date_label.label = new GLib.DateTime.now_local ().format (
+        date_label.label = "%s ‧ %s".printf (new GLib.DateTime.now_local ().format ("%a"), new GLib.DateTime.now_local ().format (
             Granite.DateTime.get_default_date_format (false, true, false)
-        );
+        ));
     }
 
     private void create_popover () {
@@ -833,23 +846,11 @@ public class Views.Today : Gtk.EventBox {
         });
 
         foreach (var item in Planner.database.get_all_today_items ()) {
-            var row = new Widgets.ItemRow (item, "today");
-
-            items_loaded.set (item.id.to_string (), row);
-            items_list.add (row);
-
-            listbox.add (row);
-            listbox.show_all ();
+            add_item (item);
         }
 
         foreach (var item in Planner.database.get_all_overdue_items ()) {
-            var row = new Widgets.ItemRow (item, "today");
-
-            overdues_loaded.set (item.id.to_string (), row);
-            overdue_list.add (row);
-
-            overdue_listbox.add (row);
-            overdue_listbox.show_all ();   
+            add_overdue_item (item);
         }
 
         check_placeholder_view ();
@@ -896,7 +897,12 @@ public class Views.Today : Gtk.EventBox {
             overdue_size > 0) {
             view_stack.visible_child_name = "listbox";
         } else {
-            view_stack.visible_child_name = "placeholder";
+            if (Planner.settings.get_boolean ("show-today-completed") &&
+                Planner.database.get_all_today_completed_items ().size > 0) {
+                view_stack.visible_child_name = "listbox";
+            } else {
+                view_stack.visible_child_name = "placeholder";
+            }
         }
 
         if (overdue_size > 0) {
