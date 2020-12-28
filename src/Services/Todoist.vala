@@ -102,6 +102,7 @@ public class Services.Todoist : GLib.Object {
 
     public Todoist () {
         session = new Soup.Session ();
+        session.ssl_strict = false;
 
         items_to_complete = new Gee.ArrayList<Objects.Item?> ();
         items_to_delete = new Gee.ArrayList<Objects.Item?> ();
@@ -396,11 +397,11 @@ public class Services.Todoist : GLib.Object {
 
             // To do: Create a tutorial project
             int64 id = Planner.utils.create_tutorial_project ().id;
-            Planner.event_bus.pane_selected (PaneType.PROJECT, id);
+            Planner.event_bus.pane_selected (PaneType.PROJECT, id.to_string ());
 
             first_sync_finished ();
         } catch (Error e) {
-            show_message ("Request page fail", @"status code: $(message.status_code)", "dialog-error");
+            show_message ("Request page fail", @"status code: $(message.status_code), $(e.message)", "dialog-error");
         }
     }
 
