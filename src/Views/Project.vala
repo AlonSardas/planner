@@ -81,8 +81,7 @@ public class Views.Project : Gtk.EventBox {
         name_stack.add_named (name_eventbox, "name_label");
         name_stack.add_named (name_entry, "name_entry");
 
-        var project_progress = new Widgets.ProjectProgress (9);
-        project_progress.margin = 2;
+        var project_progress = new Widgets.ProjectProgress (15);
         project_progress.valign = Gtk.Align.CENTER;
         project_progress.halign = Gtk.Align.CENTER;
         //  project_progress.percentage = get_percentage (
@@ -97,7 +96,6 @@ public class Views.Project : Gtk.EventBox {
         //  }
 
         var progress_grid = new Gtk.Grid ();
-        progress_grid.get_style_context ().add_class ("project-progress-view");
         progress_grid.add (project_progress);
         progress_grid.valign = Gtk.Align.CENTER;
         progress_grid.halign = Gtk.Align.CENTER;
@@ -219,7 +217,13 @@ public class Views.Project : Gtk.EventBox {
         main_stack = new Gtk.Stack ();
         main_stack.expand = true;
         main_stack.transition_type = Gtk.StackTransitionType.CROSSFADE;
+
+        list_view = new Widgets.ListView ();
+        board_view = new Widgets.BoardView ();
         
+        main_stack.add_named (board_view, "board");
+        main_stack.add_named (list_view, "project");
+
         var magic_button = new Widgets.MagicButton ();
 
         var main_box = new Gtk.Box (Gtk.Orientation.VERTICAL, 0);
@@ -246,18 +250,7 @@ public class Views.Project : Gtk.EventBox {
             progress_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
             check_due_date ();
 
-            if (list_view == null) {
-                list_view = new Widgets.ListView ();
-                main_stack.add_named (list_view, "project");
-            }
-            
-            list_view.project = project;
-
-            if (board_view == null) {
-                board_view = new Widgets.BoardView ();
-                main_stack.add_named (board_view, "board");
-            }
-            
+            list_view.project = project;            
             board_view.project = project;
 
             show_all ();
