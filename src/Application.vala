@@ -61,7 +61,7 @@ public class Planner : Gtk.Application {
     public static Services.EventBus event_bus;
     public static Services.Calendar.CalendarModel calendar_model;
     public static Services.PluginsManager plugins;
-    public static Services.DateParser date_parser;
+    // public static Services.DateParser date_parser;
 
     public signal void go_view (string type, int64 id, int64 id_2);
 
@@ -110,7 +110,7 @@ public class Planner : Gtk.Application {
         calendar_model = new Services.Calendar.CalendarModel ();
         event_bus = new Services.EventBus ();
         plugins = new Services.PluginsManager ();
-        date_parser = new Services.DateParser ();
+        // date_parser = new Services.DateParser ();
 
         add_main_option_entries (PLANNER_OPTIONS);
     }
@@ -207,6 +207,12 @@ public class Planner : Gtk.Application {
         if (load_project != 0) {
             var dialog = new Dialogs.Project (database.get_project_by_id (load_project), true);
             dialog.destroy.connect (Gtk.main_quit);
+                        
+            Planner.settings.get ("project-dialog-position", "(ii)", out window_x, out window_y);
+            Planner.settings.get ("project-dialog-size", "(ii)", out rect.width, out rect.height);
+
+            dialog.set_allocation (rect);
+            dialog.move (window_x, window_y);
             dialog.show_all ();
         }
 
