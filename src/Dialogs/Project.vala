@@ -48,10 +48,9 @@ public class Dialogs.Project : Hdy.Window {
     private Gtk.ToggleButton settings_button;
 
     private Gtk.Popover progress_popover = null;
-    private Gtk.ToggleButton progress_button;
-
-    private Gtk.Revealer due_revealer;
-    private Gtk.Label due_label;
+    private Gtk.ToggleButton deadline_button;
+    private Gtk.Revealer deadline_revealer;
+    private Gtk.Label deadline_label;
 
     private uint configure_id = 0;
     private int64 temp_id_mapping { get; set; default = 0; }
@@ -78,10 +77,33 @@ public class Dialogs.Project : Hdy.Window {
         header.show_close_button = true;
         header.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
 
+        var color_popover = new Widgets.ColorPopover ();
+
+        var project_progress = new Widgets.ProjectProgress (16);
+        project_progress.valign = Gtk.Align.CENTER;
+        project_progress.halign = Gtk.Align.CENTER;
+        project_progress.progress_fill_color = Planner.utils.get_color (project.color);
+        project_progress.percentage = get_percentage (
+            Planner.database.get_count_checked_items_by_project (project.id),
+            Planner.database.get_all_count_items_by_project (project.id)
+        );
+
+        var progress_button = new Gtk.MenuButton ();
+        progress_button.valign = Gtk.Align.START;
+        progress_button.get_style_context ().add_class ("no-padding");
+        progress_button.get_style_context ().add_class ("flat");
+        progress_button.add (project_progress);
+        progress_button.popover = color_popover;
+        progress_button.margin_end = 12;
+        progress_button.margin_top = 2;
+
         name_label = new Gtk.Label (project.name);
         name_label.halign = Gtk.Align.START;
         name_label.get_style_context ().add_class ("title-label");
         name_label.get_style_context ().add_class ("font-bold");
+
+        var source_icon = new Gtk.Image ();
+        source_icon.pixel_size = 16;
 
         var name_eventbox = new Gtk.EventBox ();
         name_eventbox.valign = Gtk.Align.START;
@@ -103,92 +125,31 @@ public class Dialogs.Project : Hdy.Window {
         name_stack.add_named (name_eventbox, "name_label");
         name_stack.add_named (name_entry, "name_entry");
 
-        var project_progress = new Widgets.ProjectProgress (18);
-        project_progress.valign = Gtk.Align.CENTER;
-        project_progress.halign = Gtk.Align.CENTER;
-        project_progress.percentage = get_percentage (
-            Planner.database.get_count_checked_items_by_project (project.id),
-            Planner.database.get_all_count_items_by_project (project.id)
-        );
-        
-        if (Planner.settings.get_enum ("appearance") == 0) {
-            project_progress.progress_fill_color = "#000000";
-        } else {
-            project_progress.progress_fill_color = "#FFFFFF";
-        }
+        var deadline_icon = new Gtk.Image ();
+        deadline_icon.gicon = new ThemedIcon ("edit-flag-symbolic");
+        deadline_icon.pixel_size = 14;
 
-        var progress_grid = new Gtk.Grid ();
-        progress_grid.get_style_context ().add_class ("project-progress-view");
-        progress_grid.add (project_progress);
-        progress_grid.valign = Gtk.Align.CENTER;
-        progress_grid.halign = Gtk.Align.CENTER;
+        deadline_label = new Gtk.Label (null);
+        deadline_label.get_style_context ().add_class ("font-bold");
 
-        due_label = new Gtk.Label (null);
-        due_label.get_style_context ().add_class ("font-bold");
+        var deadline_grid = new Gtk.Grid ();
+        deadline_grid.add (deadline_icon);
+        deadline_grid.add (deadline_label);
 
-        var p_grid = new Gtk.Grid ();
-        p_grid.add (progress_grid);
-        p_grid.add (due_label);
+        deadline_button = new Gtk.ToggleButton ();
+        deadline_button.halign = Gtk.Align.CENTER;
+        deadline_button.can_focus = false;
+        deadline_button.get_style_context ().add_class ("flat");
+        deadline_button.add (deadline_grid);
+        deadline_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
 
-        progress_button = new Gtk.ToggleButton ();
-        progress_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
-        progress_button.valign = Gtk.Align.CENTER;
-        progress_button.halign = Gtk.Align.CENTER;
-        progress_button.can_focus = false;
-        progress_button.get_style_context ().add_class ("flat");
-        progress_button.add (p_grid);
-
-        due_revealer = new Gtk.Revealer ();
-        due_revealer.transition_type = Gtk.RevealerTransitionType.SLIDE_LEFT;
-        due_revealer.add (progress_button);
-
-        var section_image = new Gtk.Image ();
-        section_image.gicon = new ThemedIcon ("section-symbolic");
-        section_image.pixel_size = 16;
-
-        section_button = new Gtk.ToggleButton ();
-        section_button.valign = Gtk.Align.CENTER;
-        section_button.halign = Gtk.Align.CENTER;
-        section_button.tooltip_markup = Granite.markup_accel_tooltip ({"s"}, _("Add Section"));
-        section_button.can_focus = false;
-        section_button.get_style_context ().add_class ("flat");
-        section_button.add (section_image);
-
-        section_button = new Gtk.ToggleButton ();
-        section_button.valign = Gtk.Align.CENTER;
-        section_button.halign = Gtk.Align.CENTER;
-        section_button.tooltip_markup = Granite.markup_accel_tooltip ({"<Ctrl><Shift>S"}, _("Add Section"));
-        section_button.can_focus = false;
-        section_button.get_style_context ().add_class ("flat");
-        section_button.add (section_image);
-
-        var add_person_button = new Gtk.Button.from_icon_name ("contact-new-symbolic", Gtk.IconSize.MENU);
-        add_person_button.valign = Gtk.Align.CENTER;
-        add_person_button.halign = Gtk.Align.CENTER;
-        add_person_button.tooltip_text = _("Invite person");
-        add_person_button.can_focus = false;
-        add_person_button.margin_start = 6;
-        add_person_button.get_style_context ().add_class ("flat");
-
-        var comment_button = new Gtk.Button.from_icon_name ("internet-chat-symbolic", Gtk.IconSize.MENU);
-        comment_button.valign = Gtk.Align.CENTER;
-        comment_button.halign = Gtk.Align.CENTER;
-        comment_button.can_focus = false;
-        comment_button.tooltip_text = _("Project comments");
-        comment_button.margin_start = 6;
-        comment_button.get_style_context ().add_class ("flat");
-
-        var search_button = new Gtk.Button.from_icon_name ("edit-find-symbolic", Gtk.IconSize.MENU);
-        search_button.valign = Gtk.Align.CENTER;
-        search_button.halign = Gtk.Align.CENTER;
-        search_button.can_focus = false;
-        search_button.tooltip_text = _("Search task");
-        search_button.margin_start = 6;
-        search_button.get_style_context ().add_class ("flat");
+        deadline_revealer = new Gtk.Revealer ();
+        deadline_revealer.transition_type = Gtk.RevealerTransitionType.SLIDE_LEFT;
+        deadline_revealer.add (deadline_button);
 
         var settings_image = new Gtk.Image ();
         settings_image.gicon = new ThemedIcon ("view-more-symbolic");
-        settings_image.pixel_size = 14;
+        settings_image.pixel_size = 16;
 
         settings_button = new Gtk.ToggleButton ();
         settings_button.valign = Gtk.Align.CENTER;
@@ -197,7 +158,7 @@ public class Dialogs.Project : Hdy.Window {
         settings_button.image = settings_image;
         settings_button.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
 
-        var top_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 6);
+        var top_box = new Gtk.Box (Gtk.Orientation.HORIZONTAL, 0);
         top_box.hexpand = true;
         top_box.valign = Gtk.Align.START;
         top_box.margin_end = 32;
@@ -226,11 +187,15 @@ public class Dialogs.Project : Hdy.Window {
         var label_filter = new Widgets.LabelFilter ();
         label_filter.project = project;
 
+        var sort_button = new Widgets.SortButton ();
+        sort_button.project = project;
+
+        top_box.pack_start (progress_button, false, false, 0);
         top_box.pack_start (name_stack, false, true, 0);
         top_box.pack_end (settings_button, false, false, 0);
-        top_box.pack_end (section_button, false, false, 0);
+        top_box.pack_end (sort_button, false, false, 0);
         top_box.pack_end (label_filter, false, false, 0);
-        top_box.pack_end (due_revealer, false, false, 0);
+        top_box.pack_end (deadline_revealer, false, false, 0);
 
         note_textview = new Widgets.TextView ();
         note_textview.tooltip_text = _("Add a description");
@@ -304,6 +269,25 @@ public class Dialogs.Project : Hdy.Window {
 
         add (overlay);
 
+        // Check Placeholder view
+        Timeout.add (125, () => {
+            Planner.database.get_project_count (project.id);
+
+            if (project.is_kanban == 1) {
+                board_view.add_boards ();
+            } else {
+                list_view.add_sections ();
+            }
+
+            show_all ();
+
+            if (project.is_kanban == 1) {
+                main_stack.visible_child_name = "board";
+            }
+
+            return GLib.Source.REMOVE;
+        });
+
         delete_event.connect (() => {
             if (only_window) {
                 Planner.instance.main_window.destroy ();
@@ -328,17 +312,6 @@ public class Dialogs.Project : Hdy.Window {
             } else {
                 list_view.add_new_item (Planner.settings.get_enum ("new-tasks-position"));
             }
-        });
-
-        // Check Placeholder view
-        Timeout.add (125, () => {
-            Planner.database.get_project_count (project.id);
-
-            if (project.is_kanban == 1) {
-                main_stack.visible_child_name = "board";
-            }
-
-            return GLib.Source.REMOVE;
         });
 
         submit_button.clicked.connect (() => {
@@ -440,16 +413,6 @@ public class Dialogs.Project : Hdy.Window {
             return false;
         });
 
-        section_button.toggled.connect (() => {
-            Planner.event_bus.unselect_all ();
-            open_new_section ();
-        });
-
-        progress_button.toggled.connect (() => {
-            Planner.event_bus.unselect_all ();
-            open_progress_popover ();
-        });
-
         Planner.database.project_updated.connect ((p) => {
             if (project != null && p.id == project.id) {
                 project = p;
@@ -469,6 +432,21 @@ public class Dialogs.Project : Hdy.Window {
                 } else {
                     project_progress.progress_fill_color = "#FFFFFF";
                 }
+            }
+        });
+
+        deadline_button.toggled.connect (() => {
+            Planner.event_bus.unselect_all ();
+            open_progress_popover ();
+        });
+
+        Planner.database.check_project_count.connect ((id) => {
+            if (project.id == id) {
+                project_progress.percentage = get_percentage (
+                    Planner.database.get_count_checked_items_by_project (project.id),
+                    Planner.database.get_all_count_items_by_project (project.id)
+                );
+                deadline_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
             }
         });
     }
@@ -700,6 +678,9 @@ public class Dialogs.Project : Hdy.Window {
         board_button.button_release_event.connect (() => {
             board_switch.activate ();
 
+            list_view.remove_sections ();
+            board_view.remove_boards ();
+            
             if (board_switch.active) {
                 project.is_kanban = 0;
                 main_stack.visible_child_name = "project";
@@ -713,15 +694,6 @@ public class Dialogs.Project : Hdy.Window {
             save (false);
             return Gdk.EVENT_STOP;
         });
-    }
-
-    public void open_new_section () {
-        if (new_section_popover == null) {
-            build_new_section_popover ();
-        }
-
-        new_section_popover.show_all ();
-        section_name_entry.grab_focus ();
     }
 
     public void open_progress_popover () {
@@ -744,7 +716,7 @@ public class Dialogs.Project : Hdy.Window {
     }
 
     public void build_progress_popover () {
-        progress_popover = new Gtk.Popover (progress_button);
+        progress_popover = new Gtk.Popover (deadline_button);
         progress_popover.get_style_context ().add_class ("popover-background");
         progress_popover.position = Gtk.PositionType.BOTTOM;
 
@@ -799,144 +771,8 @@ public class Dialogs.Project : Hdy.Window {
         progress_popover.add (popover_grid);
 
         progress_popover.closed.connect (() => {
-            progress_button.active = false;
+            deadline_button.active = false;
         });
-    }
-
-    private void build_new_section_popover () {
-        new_section_popover = new Gtk.Popover (section_button);
-        new_section_popover.get_style_context ().add_class ("popover-background");
-        new_section_popover.position = Gtk.PositionType.BOTTOM;
-
-        var name_label = new Granite.HeaderLabel (_("Name:"));
-
-        section_name_entry = new Widgets.Entry ();
-        section_name_entry.hexpand = true;
-
-        var submit_button = new Gtk.Button ();
-        submit_button.sensitive = false;
-        submit_button.get_style_context ().add_class (Gtk.STYLE_CLASS_SUGGESTED_ACTION);
-
-        var submit_spinner = new Gtk.Spinner ();
-        submit_spinner.start ();
-
-        var submit_stack = new Gtk.Stack ();
-        submit_stack.expand = true;
-        submit_stack.transition_type = Gtk.StackTransitionType.CROSSFADE;
-
-        submit_stack.add_named (new Gtk.Label (_("Add")), "label");
-        submit_stack.add_named (submit_spinner, "spinner");
-
-        submit_button.add (submit_stack);
-
-        var cancel_button = new Gtk.Button.with_label (_("Cancel"));
-        cancel_button.get_style_context ().add_class ("planner-button");
-
-        var action_grid = new Gtk.Grid ();
-        action_grid.expand = false;
-        action_grid.halign = Gtk.Align.START;
-        action_grid.column_homogeneous = true;
-        action_grid.column_spacing = 6;
-        action_grid.margin_top = 12;
-        action_grid.add (cancel_button);
-        action_grid.add (submit_button);
-
-        var popover_grid = new Gtk.Grid ();
-        popover_grid.width_request = 250;
-        popover_grid.margin = 6;
-        popover_grid.margin_top = 0;
-        popover_grid.orientation = Gtk.Orientation.VERTICAL;
-        popover_grid.add (name_label);
-        popover_grid.add (section_name_entry);
-        popover_grid.add (action_grid);
-
-        new_section_popover.add (popover_grid);
-
-        new_section_popover.closed.connect (() => {
-            section_button.active = false;
-        });
-
-        submit_button.clicked.connect (insert_section);
-
-        section_name_entry.activate.connect (() => {
-            insert_section ();
-        });
-
-        section_name_entry.key_release_event.connect ((key) => {
-            if (key.keyval == 65307) {
-                section_name_entry.text = "";
-                new_section_popover.popdown ();
-            }
-
-            return false;
-        });
-
-        section_name_entry.changed.connect (() => {
-            if (section_name_entry.text != "") {
-                submit_button.sensitive = true;
-            } else {
-                submit_button.sensitive = false;
-            }
-        });
-
-        cancel_button.clicked.connect (() => {
-            section_name_entry.text = "";
-            new_section_popover.popdown ();
-        });
-
-        Planner.todoist.section_added_started.connect ((id) => {
-            if (temp_id_mapping == id) {
-                submit_stack.visible_child_name = "spinner";
-                popover_grid.sensitive = false;
-            }
-        });
-
-        Planner.todoist.section_added_completed.connect ((id) => {
-            if (temp_id_mapping == id) {
-                submit_stack.visible_child_name = "label";
-                temp_id_mapping = 0;
-
-                popover_grid.sensitive = true;
-
-                section_name_entry.text = "";
-                new_section_popover.popdown ();
-            }
-        });
-
-        Planner.todoist.section_added_error.connect ((id) => {
-            if (temp_id_mapping == id) {
-                submit_stack.visible_child_name = "label";
-                temp_id_mapping = 0;
-
-                popover_grid.sensitive = true;
-
-                section_name_entry.text = "";
-                new_section_popover.popdown ();
-            }
-        });
-    }
-
-    private void insert_section () {
-        if (section_name_entry.text.strip () != "") {
-            var section = new Objects.Section ();
-            section.name = section_name_entry.text;
-            section.project_id = project.id;
-            section.is_todoist = project.is_todoist;
-
-            if (project.is_todoist == 0) {
-                section.id = Planner.utils.generate_id ();
-                Planner.database.insert_section (section);
-
-                section_name_entry.text = "";
-                new_section_popover.popdown ();
-            } else {
-                var cancellable = new Cancellable ();
-                temp_id_mapping = Planner.utils.generate_id ();
-                section.is_todoist = 1;
-
-                Planner.todoist.add_section.begin (section, cancellable, temp_id_mapping);
-            }
-        }
     }
 
     public override bool configure_event (Gdk.EventConfigure event) {

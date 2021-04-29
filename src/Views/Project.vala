@@ -57,10 +57,20 @@ public class Views.Project : Gtk.EventBox {
     private bool entry_menu_opened = false;
 
     construct {
+        var color_popover = new Widgets.ColorPopover ();
+
         var project_progress = new Widgets.ProjectProgress (16);
-        project_progress.margin_top = 1;
         project_progress.valign = Gtk.Align.CENTER;
         project_progress.halign = Gtk.Align.CENTER;
+
+        var progress_button = new Gtk.MenuButton ();
+        progress_button.valign = Gtk.Align.START;
+        progress_button.get_style_context ().add_class ("no-padding");
+        progress_button.get_style_context ().add_class ("flat");
+        progress_button.add (project_progress);
+        progress_button.popover = color_popover;
+        progress_button.margin_end = 12;
+        progress_button.margin_top = 2;
 
         name_label = new Gtk.Label (null);
         name_label.halign = Gtk.Align.START;
@@ -70,17 +80,11 @@ public class Views.Project : Gtk.EventBox {
         var source_icon = new Gtk.Image ();
         source_icon.pixel_size = 16;
 
-        var name_label_box = new Gtk.Grid ();
-        name_label_box.column_spacing = 6;
-        name_label_box.add (project_progress);
-        name_label_box.add (name_label);
-        // name_label_box.add (source_icon);
-
         var name_eventbox = new Gtk.EventBox ();
         name_eventbox.valign = Gtk.Align.START;
         name_eventbox.add_events (Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK);
         name_eventbox.hexpand = true;
-        name_eventbox.add (name_label_box);
+        name_eventbox.add (name_label);
 
         name_entry = new Widgets.Entry ();
         name_entry.get_style_context ().add_class ("font-bold");
@@ -140,6 +144,7 @@ public class Views.Project : Gtk.EventBox {
         settings_button.get_style_context ().add_class (Gtk.STYLE_CLASS_FLAT);
 
         var label_filter = new Widgets.LabelFilter ();
+        var sort_button = new Widgets.SortButton ();
 
         var submit_button = new Gtk.Button.with_label (_("Save"));
         submit_button.sensitive = false;
@@ -167,9 +172,11 @@ public class Views.Project : Gtk.EventBox {
         top_box.margin_end = 32;
         top_box.margin_start = 42;
         top_box.margin_top = 6;
+        top_box.pack_start (progress_button, false, false, 0);
         top_box.pack_start (name_stack, false, true, 0);
         top_box.pack_end (settings_button, false, false, 0);
-        // top_box.pack_end (section_button, false, false, 6);
+        // top_box.pack_end (section_button, false, false, 0);
+        top_box.pack_end (sort_button, false, false, 0);
         top_box.pack_end (label_filter, false, false, 0);
         top_box.pack_end (deadline_revealer, false, false, 0);
 
@@ -252,17 +259,25 @@ public class Views.Project : Gtk.EventBox {
             }
 
             label_filter.project = project;
+            sort_button.project = project;
             deadline_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
             project_progress.progress_fill_color = Planner.utils.get_color (project.color);
+            color_popover.selected = project.color;
             project_progress.percentage = get_percentage (
                 Planner.database.get_count_checked_items_by_project (project.id),
                 Planner.database.get_all_count_items_by_project (project.id)
             );
 
             check_due_date ();
-
-            list_view.project = project;            
+            
+            list_view.project = project;
             board_view.project = project;
+
+            if (project.is_kanban == 1) {
+                board_view.add_boards ();
+            } else {
+                list_view.add_sections ();
+            }
 
             show_all ();
 
@@ -277,6 +292,13 @@ public class Views.Project : Gtk.EventBox {
                 
                 return GLib.Source.REMOVE;
             });
+        });
+
+        color_popover.color_changed.connect ((color) => {
+            if (project != null) {
+                project.color = color;
+                save (true);
+            }
         });
 
         magic_button.clicked.connect (() => {
@@ -432,6 +454,18 @@ public class Views.Project : Gtk.EventBox {
                 deadline_button.tooltip_text = _("Progress: %s".printf (GLib.Math.round ((project_progress.percentage * 100)).to_string ())) + "%";
             }
         });
+
+        Planner.event_bus.edit_project.connect ((id) => {
+            if (project.id == id) {
+                edit ();
+            }
+        });
+    }
+
+    public void edit () {
+        action_revealer.reveal_child = true;
+        name_stack.visible_child_name = "name_entry";
+        name_entry.grab_focus ();
     }
 
     private void update_note_label (string text) {
@@ -468,11 +502,9 @@ public class Views.Project : Gtk.EventBox {
 
         var open_menu = new Widgets.ModelButton (_("Open New Window"), "window-new-symbolic", "");
         var edit_menu = new Widgets.ModelButton (_("Edit Project"), "edit-symbolic", "");
-        var sort_date_menu = new Widgets.ModelButton (_("Sort by date"), "x-office-calendar-symbolic", "");
-        var sort_priority_menu = new Widgets.ModelButton (_("Sort by priority"), "edit-flag-symbolic", "");
-        var sort_name_menu = new Widgets.ModelButton (_("Sort by name"), "font-x-generic-symbolic", "");
-        //var archive_menu = new Widgets.ModelButton (_("Archive project"), "planner-archive-symbolic");
-        var share_item = new Widgets.ModelButton (_("Utilities"), "applications-utilities-symbolic", "", true);
+        var new_section_menu = new Widgets.ModelButton (_("Add Section"), "section-symbolic", "");
+        var utilities_item = new Widgets.ModelButton (_("Utilities"), "applications-utilities-symbolic", "", true);
+        var order_by_item = new Widgets.ModelButton (_("Utilities"), "applications-utilities-symbolic", "", true);
 
         var delete_menu = new Widgets.ModelButton (_("Delete"), "user-trash-symbolic");
         delete_menu.get_style_context ().add_class ("menu-danger");
@@ -538,20 +570,14 @@ public class Views.Project : Gtk.EventBox {
             margin_top = 3,
             margin_bottom = 3
         });
+        popover_grid.add (new_section_menu);
         popover_grid.add (edit_menu);
         popover_grid.add (board_button);
         popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
             margin_top = 3,
             margin_bottom = 3
         });
-        popover_grid.add (sort_date_menu);
-        popover_grid.add (sort_priority_menu);
-        popover_grid.add (sort_name_menu);
-        popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
-            margin_top = 3,
-            margin_bottom = 3
-        });
-        popover_grid.add (share_item);
+        popover_grid.add (utilities_item);
         popover_grid.add (show_completed_button);
         popover_grid.add (new Gtk.Separator (Gtk.Orientation.HORIZONTAL) {
             margin_top = 3,
@@ -568,9 +594,17 @@ public class Views.Project : Gtk.EventBox {
         edit_menu.clicked.connect (() => {
             var dialog = new Dialogs.ProjectSettings (project);
             dialog.destroy.connect (Gtk.main_quit);
-            
+            dialog.show_all ();
 
             popover.popdown ();
+        });
+
+        new_section_menu.clicked.connect (() => {
+            if (board_switch.active) {
+
+            } else {
+                list_view.add_new_section_row (0);
+            }
         });
 
         open_menu.clicked.connect (() => {
@@ -633,36 +667,25 @@ public class Views.Project : Gtk.EventBox {
         board_button.button_release_event.connect (() => {
             board_switch.activate ();
 
+            list_view.remove_sections ();
+            board_view.remove_boards ();
+
             if (board_switch.active) {
                 project.is_kanban = 0;
-                main_stack.visible_child_name = "project";
                 list_view.add_sections ();
+                main_stack.visible_child_name = "project";
             } else {
                 project.is_kanban = 1;
-                main_stack.visible_child_name = "board";
                 board_view.add_boards ();
+                main_stack.visible_child_name = "board";
             }
             
+            show_all ();
             save (false);
             return Gdk.EVENT_STOP;
         });
 
-        sort_date_menu.clicked.connect (() => {
-            Planner.database.update_sort_order_project (project.id, 1);
-            popover.popdown ();
-        });
-
-        sort_priority_menu.clicked.connect (() => {
-            Planner.database.update_sort_order_project (project.id, 2);
-            popover.popdown ();
-        });
-
-        sort_name_menu.clicked.connect (() => {
-            Planner.database.update_sort_order_project (project.id, 3);
-            popover.popdown ();
-        });
-
-        share_item.clicked.connect (() => {
+        utilities_item.clicked.connect (() => {
             if (share_menu == null) {
                 share_menu = new Gtk.Menu ();
 

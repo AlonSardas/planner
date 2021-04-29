@@ -32,7 +32,7 @@ public class Widgets.ListView : Gtk.EventBox {
         add (scrolled);
 
         notify["project"].connect (() => {
-            add_sections ();
+            // add_sections ();
         });
 
         Planner.database.section_added.connect ((section, index) => {
@@ -88,6 +88,7 @@ public class Widgets.ListView : Gtk.EventBox {
         }
 
         inbox_section = new Widgets.SectionRow.for_project (project);
+        inbox_section.add_new_section_row.connect (add_new_section_row);
         section_listbox.add (inbox_section);
         foreach (var section in Planner.database.get_all_sections_by_project (project.id)) {
             var row = new Widgets.SectionRow (section, project);
@@ -96,6 +97,12 @@ public class Widgets.ListView : Gtk.EventBox {
         }
         
         show_all ();
+    }
+
+    public void remove_sections () {
+        foreach (unowned Gtk.Widget child in section_listbox.get_children ()) {
+            child.destroy ();
+        }
     }
 
     public void add_new_item (int index=-1) {
@@ -147,7 +154,7 @@ public class Widgets.ListView : Gtk.EventBox {
         });
     }
 
-    private void add_new_section_row (int index) {
+    public void add_new_section_row (int index) {
         var row = new Widgets.NewSection (project.id, project.is_todoist, index + 1);
         section_listbox.insert (row, index + 1);
         section_listbox.show_all ();

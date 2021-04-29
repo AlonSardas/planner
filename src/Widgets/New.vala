@@ -271,14 +271,7 @@ public class Widgets.New : Gtk.Revealer {
             cancel ();
         });
 
-        Planner.todoist.project_added_error.connect ((error_code, error_message) => {
-            submit_button.sensitive = true;
-            submit_stack.visible_child_name = "label";
-
-            if (error_code != 0) {
-                Planner.notifications.send_notification (error_message, NotificationStyle.ERROR);
-            }
-        });
+        
 
         source_button.toggled.connect (() => {
             if (source_popover == null) {
@@ -481,18 +474,10 @@ public class Widgets.New : Gtk.Revealer {
 
     private void create_project () {
         if (name_entry.text != "") {
-            // var area = get_area_selected ();
-
             var project = new Objects.Project ();
             project.name = name_entry.text;
             project.color = get_color_selected ();
             project.note = description_textview.buffer.text;
-
-            //  if (area == null) {
-            //      project.area_id = 0;
-            //  } else {
-            //      project.area_id = area.id;
-            //  }
 
             if (source_image.icon_name == "planner-offline-symbolic") {
                 project.id = Planner.utils.generate_id ();
@@ -502,7 +487,7 @@ public class Widgets.New : Gtk.Revealer {
             } else {
                 cancellable = new Cancellable ();
                 project.is_todoist = 1;
-                Planner.todoist.add_project (project, cancellable);
+                // Planner.todoist.add_project (project, cancellable);
             }
         }
     }

@@ -69,8 +69,11 @@ You'll need the following dependencies:
 * libedataserver1.2-dev
 * libpeas-dev
 * libical-dev
+* libhandy-1-0
 * meson
 * valac >= 0.40.3
+* [elementary-icons](https://github.com/elementary/icons)
+* [elementary-stylesheet](https://github.com/elementary/stylesheet/releases/tag/5.4.2)
 
 Run `meson build` to configure the build environment. Change to the build directory and run `ninja` to build
 
@@ -82,8 +85,13 @@ To install, use `ninja install`, then execute with `com.github.alainm23.planner`
 
     sudo ninja install
     com.github.alainm23.planner
+    
+## Translation Status
+Planner is currently translated into several languages and with your help, we can support even more. If you are multilingual, this is a great way to support the project. You can view and assist with Planner's translation efforts by visiting here: https://hosted.weblate.org/projects/planner/translations/
+
 
 ## Support
-If you like Planner and you want to support its development, consider supporting via [Patreon](https://www.patreon.com/alainm23) or [PayPal](https://www.paypal.me/alainm23)
+If you like Planner and you want to support its development, consider supporting via [Patreon](https://www.patreon.com/alainm23), [PayPal](https://www.paypal.me/alainm23) or [Liberapay](https://liberapay.com/Alain)
 
 Made with 💗 in Perú
+
