@@ -406,9 +406,9 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         preview_box.pack_start (duedate_preview_revealer, false, false, 0);
         preview_box.pack_start (project_preview_revealer, false, false, 0);
         preview_box.pack_start (labels_preview_box_revealer, false, false, 0);
-        preview_box.pack_end (note_preview_revealer, false, false, 0);
-        preview_box.pack_end (reminder_preview_revealer, false, false, 0);
-        preview_box.pack_end (checklist_preview_revealer, false, false, 0);
+        preview_box.pack_start (note_preview_revealer, false, false, 0);
+        preview_box.pack_start (reminder_preview_revealer, false, false, 0);
+        preview_box.pack_start (checklist_preview_revealer, false, false, 0);
 
         preview_revealer = new Gtk.Revealer ();
         preview_revealer.transition_type = Gtk.RevealerTransitionType.SLIDE_UP;
@@ -826,8 +826,7 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         note_textview.focus_out_event.connect (() => {
             note_stack.visible_child_name = "label";
             update_note_label (note_textview.buffer.text);
-            
-            save (false);
+            save ();
             return false;
         });
 
@@ -1121,13 +1120,19 @@ public class Widgets.ItemRow : Gtk.ListBoxRow {
         checked_button.active = false;
         if (active) {
             if (item.due_is_recurring == 1) {
-                GLib.DateTime next_due = Planner.utils.get_next_recurring_due_date (item, +1);
-
-                Planner.database.update_item_recurring_due_date (item, +1);
-                Planner.notifications.send_undo_notification (
-                    _("Completed. Next occurrence: %s".printf (Planner.utils.get_default_date_format_from_date (next_due))),
-                    Planner.utils.build_undo_object ("item_reschedule", "item", item.id.to_string (), "", "")
-                );
+                if (item.due_lang == "en") {
+                    GLib.DateTime next_due = Services.Chrono.Chrono.instance.get_next_recurring (item, +1).datetime;
+                    Planner.database.update_item_recurring_due_date (item, +1);
+                    Planner.notifications.send_undo_notification (
+                        _("Completed. Next occurrence: %s".printf (Planner.utils.get_default_date_format_from_date (next_due))),
+                        Planner.utils.build_undo_object ("item_reschedule", "item", item.id.to_string (), "", "")
+                    );
+                } else {
+                    Planner.notifications.send_notification (
+                        _("Sorry, Planner doesn't support the '%s' language yet, please try to set a recurring task in English.".printf (item.due_lang)),
+                        NotificationStyle.ERROR
+                    );
+                }
             } else {                
                 Planner.notifications.send_undo_notification (
                     _("1 task completed"),
